@@ -3,7 +3,10 @@ import { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { TaskDateGroup } from "@/components/TaskDateGroup";
 import { AddTaskForm } from "@/components/AddTaskForm";
+import { StatsCards } from "@/components/StatsCards";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { Switch } from "@/components/ui/switch";
+import { Moon, Sun } from "lucide-react";
 import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -32,6 +35,7 @@ export interface UserStats {
 const Index = () => {
   const [activeView, setActiveView] = useState("home");
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [darkMode, setDarkMode] = useState(false);
   const [userStats, setUserStats] = useState<UserStats>({
     totalTasks: 0,
     completedTasks: 0,
@@ -41,7 +45,7 @@ const Index = () => {
     weeklyCompleted: 0,
   });
 
-  // Load tasks from localStorage on component mount
+  // Load tasks and theme from localStorage on component mount
   useEffect(() => {
     const savedTasks = localStorage.getItem("taskify-tasks");
     if (savedTasks) {
@@ -53,6 +57,12 @@ const Index = () => {
       }));
       setTasks(parsedTasks);
     }
+
+    const savedTheme = localStorage.getItem("taskify-theme");
+    if (savedTheme === "dark") {
+      setDarkMode(true);
+      document.documentElement.classList.add("dark");
+    }
   }, []);
 
   // Save tasks to localStorage whenever tasks change
@@ -60,6 +70,17 @@ const Index = () => {
     localStorage.setItem("taskify-tasks", JSON.stringify(tasks));
     updateUserStats();
   }, [tasks]);
+
+  // Handle theme toggle
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("taskify-theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("taskify-theme", "light");
+    }
+  }, [darkMode]);
 
   const updateUserStats = () => {
     const completedTasks = tasks.filter(task => task.status === "concluída");
@@ -93,6 +114,24 @@ const Index = () => {
     setActiveView("home");
   };
 
+  const toggleTask = (taskId: string) => {
+    setTasks(prev => prev.map(task => {
+      if (task.id === taskId) {
+        const newStatus = task.status === "concluída" ? "pendente" : "concluída";
+        return {
+          ...task,
+          status: newStatus,
+          completedAt: newStatus === "concluída" ? new Date() : undefined
+        };
+      }
+      return task;
+    }));
+  };
+
+  const deleteTask = (taskId: string) => {
+    setTasks(prev => prev.filter(task => task.id !== taskId));
+  };
+
   // Group tasks by date and priority
   const groupedTasks = tasks.reduce((groups, task) => {
     const dateKey = format(task.dueDate, "yyyy-MM-dd");
@@ -116,9 +155,12 @@ const Index = () => {
       case "history":
         return (
           <div className="p-4">
-            <h2 className="text-xl font-semibold mb-4">Histórico</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Histórico</h2>
             <div className="text-center py-12">
-              <p className="text-gray-500">Funcionalidade em desenvolvimento</p>
+              <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 rounded-full flex items-center justify-center">
+                <span className="text-3xl">📊</span>
+              </div>
+              <p className="text-gray-500 dark:text-gray-400">Funcionalidade em desenvolvimento</p>
             </div>
           </div>
         );
@@ -126,41 +168,72 @@ const Index = () => {
       case "settings":
         return (
           <div className="p-4">
-            <h2 className="text-xl font-semibold mb-4">Configurações</h2>
-            <div className="text-center py-12">
-              <p className="text-gray-500">Funcionalidade em desenvolvimento</p>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Configurações</h2>
+            <div className="space-y-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    {darkMode ? <Moon className="w-5 h-5 text-blue-500" /> : <Sun className="w-5 h-5 text-yellow-500" />}
+                    <span className="text-gray-700 dark:text-gray-300">Tema Escuro</span>
+                  </div>
+                  <Switch
+                    checked={darkMode}
+                    onCheckedChange={setDarkMode}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         );
       
       default:
         return (
-          <div className="p-4">
+          <div className="p-4 space-y-6">
+            <StatsCards stats={userStats} />
+            
             {Object.entries(groupedTasks)
               .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
               .map(([dateKey, group]) => (
                 <div key={dateKey}>
                   {group.alta.length > 0 && (
-                    <TaskDateGroup date={group.date} tasks={group.alta} priority="alta" />
+                    <TaskDateGroup 
+                      date={group.date} 
+                      tasks={group.alta} 
+                      priority="alta" 
+                      onToggle={toggleTask}
+                      onDelete={deleteTask}
+                    />
                   )}
                   {group.média.length > 0 && (
-                    <TaskDateGroup date={group.date} tasks={group.média} priority="média" />
+                    <TaskDateGroup 
+                      date={group.date} 
+                      tasks={group.média} 
+                      priority="média" 
+                      onToggle={toggleTask}
+                      onDelete={deleteTask}
+                    />
                   )}
                   {group.baixa.length > 0 && (
-                    <TaskDateGroup date={group.date} tasks={group.baixa} priority="baixa" />
+                    <TaskDateGroup 
+                      date={group.date} 
+                      tasks={group.baixa} 
+                      priority="baixa" 
+                      onToggle={toggleTask}
+                      onDelete={deleteTask}
+                    />
                   )}
                 </div>
               ))}
             
             {tasks.length === 0 && (
               <div className="text-center py-12">
-                <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-3xl">📝</span>
+                <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 rounded-full flex items-center justify-center animate-bounce-in">
+                  <span className="text-3xl">🎯</span>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">
                   Nenhuma tarefa encontrada
                 </h3>
-                <p className="text-gray-500">
+                <p className="text-gray-500 dark:text-gray-500">
                   Crie sua primeira tarefa para começar a ganhar pontos!
                 </p>
               </div>
@@ -172,14 +245,23 @@ const Index = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex w-full">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 dark:from-gray-900 dark:via-purple-900 dark:to-blue-900 flex w-full">
         <AppSidebar activeItem={activeView} onItemClick={setActiveView} />
         
         <main className="flex-1 overflow-auto">
-          <div className="h-12 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center px-4">
+          <div className="h-12 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-white/20 dark:border-gray-700/50 flex items-center justify-between px-4">
             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-              5:13 PM
+              {new Date().toLocaleTimeString('pt-BR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
             </span>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Nível {userStats.level}</span>
+              <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">{userStats.level}</span>
+              </div>
+            </div>
           </div>
           
           {renderContent()}

@@ -1,5 +1,6 @@
 
 import { Task } from "@/pages/Index";
+import { TaskCard } from "./TaskCard";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -8,19 +9,21 @@ interface TaskDateGroupProps {
   date: Date;
   tasks: Task[];
   priority: "baixa" | "média" | "alta";
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
-export const TaskDateGroup = ({ date, tasks, priority }: TaskDateGroupProps) => {
+export const TaskDateGroup = ({ date, tasks, priority, onToggle, onDelete }: TaskDateGroupProps) => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "alta":
-        return "text-red-500";
+        return "bg-gradient-to-r from-red-500 to-pink-500 text-white";
       case "média":
-        return "text-yellow-500";
+        return "bg-gradient-to-r from-yellow-500 to-orange-500 text-white";
       case "baixa":
-        return "text-green-500";
+        return "bg-gradient-to-r from-green-500 to-emerald-500 text-white";
       default:
-        return "text-gray-500";
+        return "bg-gray-500 text-white";
     }
   };
 
@@ -36,23 +39,31 @@ export const TaskDateGroup = ({ date, tasks, priority }: TaskDateGroupProps) => 
   };
 
   return (
-    <div className="mb-4">
-      <div className="bg-gray-300 dark:bg-gray-700 rounded-lg p-4 mb-3">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-gray-700 dark:text-gray-300 font-medium">
+    <div className="mb-6 animate-slide-up">
+      <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl p-4 mb-3 shadow-lg border border-white/20 dark:border-gray-700/50">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-gray-800 dark:text-gray-200 font-semibold text-lg">
             {formatDate(date)}
           </h3>
-          <Badge className={`${getPriorityColor(priority)} capitalize`}>
+          <Badge className={`${getPriorityColor(priority)} capitalize font-medium px-3 py-1 shadow-md`}>
             {priority}
           </Badge>
         </div>
-        <ul className="space-y-1">
-          {tasks.map((task) => (
-            <li key={task.id} className="text-gray-600 dark:text-gray-400 text-sm">
-              • {task.title}
-            </li>
+        <div className="space-y-3">
+          {tasks.map((task, index) => (
+            <div
+              key={task.id}
+              className="animate-slide-up"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <TaskCard
+                task={task}
+                onToggle={onToggle}
+                onDelete={onDelete}
+              />
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
     </div>
   );

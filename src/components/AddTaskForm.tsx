@@ -46,10 +46,10 @@ export const AddTaskForm = ({ onSubmit }: AddTaskFormProps) => {
   return (
     <div className="p-4 space-y-6">
       <div>
-        <h3 className="text-gray-700 dark:text-gray-300 font-medium mb-3">Data</h3>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
+        <h3 className="text-gray-800 dark:text-gray-200 font-semibold mb-3 text-lg">📅 Data</h3>
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-gray-600 dark:text-gray-400">
+            <span className="text-gray-600 dark:text-gray-400 font-medium">
               {format(selectedDate, "MMMM yyyy", { locale: ptBR })}
             </span>
           </div>
@@ -63,50 +63,53 @@ export const AddTaskForm = ({ onSubmit }: AddTaskFormProps) => {
       </div>
 
       <div>
-        <h3 className="text-gray-700 dark:text-gray-300 font-medium mb-3">Time</h3>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
+        <h3 className="text-gray-800 dark:text-gray-200 font-semibold mb-3 text-lg">🕐 Horário</h3>
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50">
           <Input
             type="time"
             value={selectedTime}
             onChange={(e) => setSelectedTime(e.target.value)}
-            className="text-center text-lg"
+            className="text-center text-lg font-medium bg-transparent border-none focus:ring-2 focus:ring-purple-500"
           />
         </div>
       </div>
 
       <div>
-        <h3 className="text-gray-700 dark:text-gray-300 font-medium mb-3">Atividades</h3>
+        <h3 className="text-gray-800 dark:text-gray-200 font-semibold mb-3 text-lg">✏️ Atividades</h3>
         <Textarea
           value={activity}
           onChange={(e) => setActivity(e.target.value)}
           placeholder="Digite sua atividade..."
-          className="bg-white dark:bg-gray-800 min-h-[100px]"
+          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm min-h-[100px] rounded-xl shadow-lg border border-white/20 dark:border-gray-700/50 focus:ring-2 focus:ring-purple-500"
         />
       </div>
 
       <div>
-        <h3 className="text-gray-700 dark:text-gray-300 font-medium mb-3">Prioridade</h3>
-        <div className="flex space-x-4">
-          {["alta", "média", "baixa"].map((p) => (
+        <h3 className="text-gray-800 dark:text-gray-200 font-semibold mb-3 text-lg">🎯 Prioridade</h3>
+        <div className="flex space-x-3">
+          {[
+            { value: "alta", label: "Alta", color: "from-red-500 to-pink-500", points: "30pts" },
+            { value: "média", label: "Média", color: "from-yellow-500 to-orange-500", points: "20pts" },
+            { value: "baixa", label: "Baixa", color: "from-green-500 to-emerald-500", points: "10pts" }
+          ].map((p) => (
             <button
-              key={p}
-              onClick={() => setPriority(p as "baixa" | "média" | "alta")}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                priority === p
-                  ? "bg-white dark:bg-gray-700 shadow-md"
-                  : "bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500"
+              key={p.value}
+              onClick={() => setPriority(p.value as "baixa" | "média" | "alta")}
+              className={`flex-1 flex flex-col items-center space-y-2 px-4 py-3 rounded-xl transition-all duration-200 ${
+                priority === p.value
+                  ? `bg-gradient-to-r ${p.color} text-white shadow-lg transform scale-105`
+                  : "bg-white/60 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 hover:shadow-md"
               }`}
             >
               <div
-                className={`w-4 h-4 rounded-full ${
-                  p === "alta"
-                    ? "bg-red-500"
-                    : p === "média"
-                    ? "bg-yellow-500"
-                    : "bg-green-500"
+                className={`w-6 h-6 rounded-full ${
+                  priority === p.value
+                    ? "bg-white/30"
+                    : `bg-gradient-to-r ${p.color}`
                 }`}
               />
-              <span className="text-gray-700 dark:text-gray-300 capitalize">{p}</span>
+              <span className="font-medium">{p.label}</span>
+              <span className="text-xs opacity-75">{p.points}</span>
             </button>
           ))}
         </div>
@@ -114,10 +117,10 @@ export const AddTaskForm = ({ onSubmit }: AddTaskFormProps) => {
 
       <Button
         onClick={handleSubmit}
-        className="w-full bg-gray-400 hover:bg-gray-500 text-white rounded-lg py-3"
+        className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-xl py-4 font-semibold text-lg shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105"
         disabled={!activity.trim()}
       >
-        Adicionar Tarefa
+        🚀 Adicionar Tarefa
       </Button>
     </div>
   );
