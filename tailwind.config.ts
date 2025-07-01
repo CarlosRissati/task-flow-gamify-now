@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,28 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Gamification colors
+				success: {
+					50: '#f0fdf4',
+					500: '#22c55e',
+					600: '#16a34a',
+				},
+				warning: {
+					50: '#fefce8',
+					500: '#eab308',
+					600: '#ca8a04',
+				},
+				danger: {
+					50: '#fef2f2',
+					500: '#ef4444',
+					600: '#dc2626',
+				},
+				game: {
+					gold: '#ffd700',
+					silver: '#c0c0c0',
+					bronze: '#cd7f32',
+					exp: '#8b5cf6',
 				}
 			},
 			borderRadius: {
@@ -84,11 +107,29 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'task-complete': {
+					'0%': { transform: 'scale(1)', backgroundColor: 'transparent' },
+					'50%': { transform: 'scale(1.05)', backgroundColor: 'rgba(34, 197, 94, 0.1)' },
+					'100%': { transform: 'scale(1)', backgroundColor: 'transparent' }
+				},
+				'bounce-in': {
+					'0%': { transform: 'scale(0.3)', opacity: '0' },
+					'50%': { transform: 'scale(1.1)' },
+					'70%': { transform: 'scale(0.9)' },
+					'100%': { transform: 'scale(1)', opacity: '1' }
+				},
+				'slide-up': {
+					'0%': { transform: 'translateY(20px)', opacity: '0' },
+					'100%': { transform: 'translateY(0)', opacity: '1' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'task-complete': 'task-complete 0.6s ease-out',
+				'bounce-in': 'bounce-in 0.5s ease-out',
+				'slide-up': 'slide-up 0.3s ease-out'
 			}
 		}
 	},
