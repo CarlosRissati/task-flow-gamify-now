@@ -1,13 +1,11 @@
 
 import { useState, useEffect } from "react";
-import { TaskList } from "@/components/TaskList";
-import { TaskForm } from "@/components/TaskForm";
-import { StatsCards } from "@/components/StatsCards";
-import { UserProfile } from "@/components/UserProfile";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { AppSidebar } from "@/components/AppSidebar";
+import { TaskDateGroup } from "@/components/TaskDateGroup";
+import { AddTaskForm } from "@/components/AddTaskForm";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { format, isSameDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export interface Task {
   id: string;
@@ -32,9 +30,8 @@ export interface UserStats {
 }
 
 const Index = () => {
+  const [activeView, setActiveView] = useState("home");
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [filter, setFilter] = useState<"todas" | "pendente" | "concluída" | "atrasada">("todas");
   const [userStats, setUserStats] = useState<UserStats>({
     totalTasks: 0,
     completedTasks: 0,
@@ -64,29 +61,11 @@ const Index = () => {
     updateUserStats();
   }, [tasks]);
 
-  // Update overdue tasks
-  useEffect(() => {
-    const updateOverdueTasks = () => {
-      const now = new Date();
-      setTasks(prev => prev.map(task => {
-        if (task.status === "pendente" && task.dueDate < now) {
-          return { ...task, status: "atrasada" as const };
-        }
-        return task;
-      }));
-    };
-
-    updateOverdueTasks();
-    const interval = setInterval(updateOverdueTasks, 60000); // Check every minute
-    return () => clearInterval(interval);
-  }, []);
-
   const updateUserStats = () => {
     const completedTasks = tasks.filter(task => task.status === "concluída");
     const totalPoints = completedTasks.reduce((sum, task) => sum + task.points, 0);
     const level = Math.floor(totalPoints / 100) + 1;
     
-    // Calculate weekly completed tasks
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     const weeklyCompleted = completedTasks.filter(
@@ -111,115 +90,102 @@ const Index = () => {
       status: "pendente",
     };
     setTasks(prev => [...prev, newTask]);
-    setIsFormOpen(false);
+    setActiveView("home");
   };
 
-  const toggleTask = (id: string) => {
-    setTasks(prev => prev.map(task => {
-      if (task.id === id) {
-        const newStatus = task.status === "concluída" ? "pendente" : "concluída";
-        return {
-          ...task,
-          status: newStatus,
-          completedAt: newStatus === "concluída" ? new Date() : undefined,
-        };
-      }
-      return task;
-    }));
-  };
+  // Group tasks by date and priority
+  const groupedTasks = tasks.reduce((groups, task) => {
+    const dateKey = format(task.dueDate, "yyyy-MM-dd");
+    if (!groups[dateKey]) {
+      groups[dateKey] = {
+        date: task.dueDate,
+        alta: [],
+        média: [],
+        baixa: [],
+      };
+    }
+    groups[dateKey][task.priority].push(task);
+    return groups;
+  }, {} as Record<string, { date: Date; alta: Task[]; média: Task[]; baixa: Task[] }>);
 
-  const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(task => task.id !== id));
+  const renderContent = () => {
+    switch (activeView) {
+      case "add":
+        return <AddTaskForm onSubmit={addTask} />;
+      
+      case "history":
+        return (
+          <div className="p-4">
+            <h2 className="text-xl font-semibold mb-4">Histórico</h2>
+            <div className="text-center py-12">
+              <p className="text-gray-500">Funcionalidade em desenvolvimento</p>
+            </div>
+          </div>
+        );
+      
+      case "settings":
+        return (
+          <div className="p-4">
+            <h2 className="text-xl font-semibold mb-4">Configurações</h2>
+            <div className="text-center py-12">
+              <p className="text-gray-500">Funcionalidade em desenvolvimento</p>
+            </div>
+          </div>
+        );
+      
+      default:
+        return (
+          <div className="p-4">
+            {Object.entries(groupedTasks)
+              .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
+              .map(([dateKey, group]) => (
+                <div key={dateKey}>
+                  {group.alta.length > 0 && (
+                    <TaskDateGroup date={group.date} tasks={group.alta} priority="alta" />
+                  )}
+                  {group.média.length > 0 && (
+                    <TaskDateGroup date={group.date} tasks={group.média} priority="média" />
+                  )}
+                  {group.baixa.length > 0 && (
+                    <TaskDateGroup date={group.date} tasks={group.baixa} priority="baixa" />
+                  )}
+                </div>
+              ))}
+            
+            {tasks.length === 0 && (
+              <div className="text-center py-12">
+                <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-3xl">📝</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                  Nenhuma tarefa encontrada
+                </h3>
+                <p className="text-gray-500">
+                  Crie sua primeira tarefa para começar a ganhar pontos!
+                </p>
+              </div>
+            )}
+          </div>
+        );
+    }
   };
-
-  const filteredTasks = tasks.filter(task => {
-    if (filter === "todas") return true;
-    return task.status === filter;
-  });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              Taskify
-            </h1>
-            <p className="text-gray-600 mt-2">Gerencie suas tarefas com estilo e gamificação</p>
+    <SidebarProvider>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex w-full">
+        <AppSidebar activeItem={activeView} onItemClick={setActiveView} />
+        
+        <main className="flex-1 overflow-auto">
+          <div className="h-12 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center px-4">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              5:13 PM
+            </span>
           </div>
-          <UserProfile stats={userStats} />
-        </div>
-
-        {/* Stats Cards */}
-        <StatsCards stats={userStats} />
-
-        {/* Main Content */}
-        <Tabs defaultValue="tarefas" className="w-full">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <TabsList className="grid w-full sm:w-auto grid-cols-2 bg-white/70 backdrop-blur-sm">
-              <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
-              <TabsTrigger value="estatisticas">Estatísticas</TabsTrigger>
-            </TabsList>
-
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nova Tarefa
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <TaskForm onSubmit={addTask} />
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <TabsContent value="tarefas" className="space-y-6">
-            {/* Filter Tabs */}
-            <div className="flex flex-wrap gap-2">
-              {["todas", "pendente", "concluída", "atrasada"].map((status) => (
-                <Button
-                  key={status}
-                  variant={filter === status ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilter(status as typeof filter)}
-                  className={`capitalize ${
-                    filter === status 
-                      ? "bg-gradient-to-r from-purple-600 to-blue-600" 
-                      : "bg-white/70 backdrop-blur-sm"
-                  }`}
-                >
-                  {status}
-                </Button>
-              ))}
-            </div>
-
-            <TaskList
-              tasks={filteredTasks}
-              onToggle={toggleTask}
-              onDelete={deleteTask}
-            />
-          </TabsContent>
-
-          <TabsContent value="estatisticas">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* More detailed statistics will go here */}
-              <div className="bg-white/70 backdrop-blur-sm rounded-lg p-6 border border-white/20">
-                <h3 className="text-lg font-semibold mb-4">Próximas Funcionalidades</h3>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li>• Gráficos de produtividade</li>
-                  <li>• Integração com calendários</li>
-                  <li>• Notificações push</li>
-                  <li>• Modo Pomodoro</li>
-                  <li>• Comandos por voz</li>
-                </ul>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+          
+          {renderContent()}
+        </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
