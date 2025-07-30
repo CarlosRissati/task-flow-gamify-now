@@ -49,6 +49,7 @@ const Index = () => {
     level: 1,
     weeklyCompleted: 0,
   });
+  const [accumulatedPoints, setAccumulatedPoints] = useState(0);
 
   // Load tasks and theme from localStorage on component mount
   useEffect(() => {
@@ -89,7 +90,8 @@ const Index = () => {
 
   const updateUserStats = () => {
     const completedTasks = tasks.filter(task => task.status === "concluída");
-    const totalPoints = completedTasks.reduce((sum, task) => sum + task.points, 0);
+    const earnedPoints = completedTasks.reduce((sum, task) => sum + task.points, 0);
+    const totalPoints = earnedPoints + accumulatedPoints;
     const level = Math.floor(totalPoints / 100) + 1;
     
     const oneWeekAgo = new Date();
@@ -148,7 +150,10 @@ const Index = () => {
       return;
     }
 
-    // Deduct points and mark task as completed
+    // Deduct points from accumulated points
+    setAccumulatedPoints(prev => prev - skipCost);
+
+    // Mark task as skipped (completed with 0 points)
     setTasks(prev => prev.map(t => {
       if (t.id === taskId) {
         return {
@@ -161,21 +166,12 @@ const Index = () => {
       return t;
     }));
 
-    // Deduct points from user stats
-    setUserStats(prev => ({
-      ...prev,
-      totalPoints: prev.totalPoints - skipCost
-    }));
-
     toast.success(`Tarefa pulada! -${skipCost} pontos gastos.`);
   };
 
   const onPomodoroComplete = () => {
     const focusPoints = 25;
-    setUserStats(prev => ({
-      ...prev,
-      totalPoints: prev.totalPoints + focusPoints
-    }));
+    setAccumulatedPoints(prev => prev + focusPoints);
     toast.success(`🍅 Pomodoro concluído! +${focusPoints} pontos de foco!`);
   };
 

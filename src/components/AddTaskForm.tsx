@@ -16,6 +16,8 @@ export const AddTaskForm = ({ onSubmit }: AddTaskFormProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState("13:47");
   const [activity, setActivity] = useState("");
+  const [description, setDescription] = useState("");
+  const [tags, setTags] = useState("");
   const [priority, setPriority] = useState<"baixa" | "média" | "alta">("média");
 
   const handleSubmit = () => {
@@ -31,16 +33,24 @@ export const AddTaskForm = ({ onSubmit }: AddTaskFormProps) => {
       alta: 30,
     };
 
+    const parsedTags = tags
+      .split(/[,\s]+/)
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0)
+      .map(tag => tag.startsWith('#') ? tag : `#${tag}`);
+
     onSubmit({
       title: activity.trim(),
-      description: "",
+      description: description.trim(),
       priority,
       dueDate,
-      tags: [],
+      tags: parsedTags,
       points: pointsMap[priority],
     });
 
     setActivity("");
+    setDescription("");
+    setTags("");
   };
 
   return (
@@ -81,6 +91,26 @@ export const AddTaskForm = ({ onSubmit }: AddTaskFormProps) => {
           onChange={(e) => setActivity(e.target.value)}
           placeholder="Digite sua atividade..."
           className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm min-h-[100px] rounded-xl shadow-lg border border-white/20 dark:border-gray-700/50 focus:ring-2 focus:ring-purple-500"
+        />
+      </div>
+
+      <div>
+        <h3 className="text-gray-800 dark:text-gray-200 font-semibold mb-3 text-lg">📝 Descrição</h3>
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Adicione uma descrição para sua tarefa..."
+          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm min-h-[80px] rounded-xl shadow-lg border border-white/20 dark:border-gray-700/50 focus:ring-2 focus:ring-purple-500"
+        />
+      </div>
+
+      <div>
+        <h3 className="text-gray-800 dark:text-gray-200 font-semibold mb-3 text-lg">🏷️ Tags</h3>
+        <Input
+          value={tags}
+          onChange={(e) => setTags(e.target.value)}
+          placeholder="Digite as tags separadas por vírgula ou espaço (ex: importante, trabalho, #urgente)"
+          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 dark:border-gray-700/50 focus:ring-2 focus:ring-purple-500"
         />
       </div>
 
