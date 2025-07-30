@@ -4,11 +4,16 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { TaskDateGroup } from "@/components/TaskDateGroup";
 import { AddTaskForm } from "@/components/AddTaskForm";
 import { StatsCards } from "@/components/StatsCards";
+import { PomodoroTimer } from "@/components/PomodoroTimer";
+import { TaskHistory } from "@/components/TaskHistory";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Switch } from "@/components/ui/switch";
-import { Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Moon, Sun, SkipForward, Coins } from "lucide-react";
 import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 export interface Task {
   id: string;
@@ -132,6 +137,82 @@ const Index = () => {
     setTasks(prev => prev.filter(task => task.id !== taskId));
   };
 
+  const skipTask = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const skipCost = task.priority === "alta" ? 50 : task.priority === "média" ? 30 : 20;
+    
+    if (userStats.totalPoints < skipCost) {
+      toast.error(`Pontos insuficientes! Você precisa de ${skipCost} pontos para pular esta tarefa.`);
+      return;
+    }
+
+    // Deduct points and mark task as completed
+    setTasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          status: "concluída" as const,
+          completedAt: new Date(),
+          points: 0 // No points for skipped tasks
+        };
+      }
+      return t;
+    }));
+
+    // Deduct points from user stats
+    setUserStats(prev => ({
+      ...prev,
+      totalPoints: prev.totalPoints - skipCost
+    }));
+
+    toast.success(`Tarefa pulada! -${skipCost} pontos gastos.`);
+  };
+
+  const onPomodoroComplete = () => {
+    const focusPoints = 25;
+    setUserStats(prev => ({
+      ...prev,
+      totalPoints: prev.totalPoints + focusPoints
+    }));
+    toast.success(`🍅 Pomodoro concluído! +${focusPoints} pontos de foco!`);
+  };
+
+  // Check for task reminders
+  useEffect(() => {
+    const checkReminders = () => {
+      const now = new Date();
+      const pendingTasks = tasks.filter(task => task.status === "pendente");
+      
+      pendingTasks.forEach(task => {
+        const timeDiff = task.dueDate.getTime() - now.getTime();
+        const hoursUntilDue = timeDiff / (1000 * 60 * 60);
+        
+        // Remind 1 hour before due time
+        if (hoursUntilDue <= 1 && hoursUntilDue > 0.95) {
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(`⏰ Lembrete: ${task.title}`, {
+              body: `Esta tarefa vence em menos de 1 hora!`,
+              icon: "/favicon.ico"
+            });
+          }
+          toast.warning(`⏰ ${task.title} vence em menos de 1 hora!`);
+        }
+      });
+    };
+
+    // Request notification permission
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    // Check reminders every 5 minutes
+    const reminderInterval = setInterval(checkReminders, 5 * 60 * 1000);
+    
+    return () => clearInterval(reminderInterval);
+  }, [tasks]);
+
   // Group tasks by date and priority
   const groupedTasks = tasks.reduce((groups, task) => {
     const dateKey = format(task.dueDate, "yyyy-MM-dd");
@@ -152,18 +233,11 @@ const Index = () => {
       case "add":
         return <AddTaskForm onSubmit={addTask} />;
       
+      case "pomodoro":
+        return <PomodoroTimer onComplete={onPomodoroComplete} />;
+      
       case "history":
-        return (
-          <div className="p-4">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Histórico</h2>
-            <div className="text-center py-12">
-              <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 rounded-full flex items-center justify-center">
-                <span className="text-3xl">📊</span>
-              </div>
-              <p className="text-gray-500 dark:text-gray-400">Funcionalidade em desenvolvimento</p>
-            </div>
-          </div>
-        );
+        return <TaskHistory tasks={tasks} />;
       
       case "settings":
         return (
@@ -196,30 +270,33 @@ const Index = () => {
               .map(([dateKey, group]) => (
                 <div key={dateKey}>
                   {group.alta.length > 0 && (
-                    <TaskDateGroup 
+                     <TaskDateGroup 
                       date={group.date} 
                       tasks={group.alta} 
                       priority="alta" 
                       onToggle={toggleTask}
                       onDelete={deleteTask}
+                      onSkip={skipTask}
                     />
                   )}
                   {group.média.length > 0 && (
-                    <TaskDateGroup 
+                     <TaskDateGroup 
                       date={group.date} 
                       tasks={group.média} 
                       priority="média" 
                       onToggle={toggleTask}
                       onDelete={deleteTask}
+                      onSkip={skipTask}
                     />
                   )}
                   {group.baixa.length > 0 && (
-                    <TaskDateGroup 
+                     <TaskDateGroup 
                       date={group.date} 
                       tasks={group.baixa} 
                       priority="baixa" 
                       onToggle={toggleTask}
                       onDelete={deleteTask}
+                      onSkip={skipTask}
                     />
                   )}
                 </div>

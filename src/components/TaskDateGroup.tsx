@@ -11,9 +11,10 @@ interface TaskDateGroupProps {
   priority: "baixa" | "média" | "alta";
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  onSkip: (id: string) => void;
 }
 
-export const TaskDateGroup = ({ date, tasks, priority, onToggle, onDelete }: TaskDateGroupProps) => {
+export const TaskDateGroup = ({ date, tasks, priority, onToggle, onDelete, onSkip }: TaskDateGroupProps) => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "alta":
@@ -60,6 +61,7 @@ export const TaskDateGroup = ({ date, tasks, priority, onToggle, onDelete }: Tas
                 task={task}
                 onToggle={onToggle}
                 onDelete={onDelete}
+                onSkip={onSkip}
               />
             </div>
           ))}

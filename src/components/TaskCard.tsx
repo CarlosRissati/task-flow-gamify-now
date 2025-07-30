@@ -3,7 +3,7 @@ import { Task } from "@/pages/Index";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Check, Trash2, Clock, Star } from "lucide-react";
+import { Check, Trash2, Clock, Star, SkipForward, Coins } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -11,9 +11,10 @@ interface TaskCardProps {
   task: Task;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  onSkip: (id: string) => void;
 }
 
-export const TaskCard = ({ task, onToggle, onDelete }: TaskCardProps) => {
+export const TaskCard = ({ task, onToggle, onDelete, onSkip }: TaskCardProps) => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "alta":
@@ -24,6 +25,15 @@ export const TaskCard = ({ task, onToggle, onDelete }: TaskCardProps) => {
         return "bg-green-100 text-green-800 border-green-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const getSkipCost = (priority: string) => {
+    switch (priority) {
+      case "alta": return 50;
+      case "média": return 30;
+      case "baixa": return 20;
+      default: return 20;
     }
   };
 
@@ -117,14 +127,28 @@ export const TaskCard = ({ task, onToggle, onDelete }: TaskCardProps) => {
                 )}
               </div>
 
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onDelete(task.id)}
-                className="text-gray-400 hover:text-red-500 p-1 h-6 w-6"
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
+              <div className="flex gap-1">
+                {task.status === "pendente" && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onSkip(task.id)}
+                    className="text-orange-500 hover:text-orange-700 p-1 h-6 w-6"
+                    title={`Pular tarefa (-${getSkipCost(task.priority)} pontos)`}
+                  >
+                    <Coins className="w-2 h-2" />
+                  </Button>
+                )}
+                
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onDelete(task.id)}
+                  className="text-gray-400 hover:text-red-500 p-1 h-6 w-6"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
             </div>
 
             {task.tags.length > 0 && (

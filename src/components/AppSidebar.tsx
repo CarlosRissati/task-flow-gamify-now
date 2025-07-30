@@ -1,5 +1,5 @@
 
-import { Home, Plus, History, Settings } from "lucide-react";
+import { Home, Plus, History, Settings, Timer } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -13,6 +13,7 @@ import {
 const menuItems = [
   { title: "Home", icon: Home, id: "home" },
   { title: "Adicionar", icon: Plus, id: "add" },
+  { title: "Pomodoro", icon: Timer, id: "pomodoro" },
   { title: "Histórico", icon: History, id: "history" },
   { title: "Configurações", icon: Settings, id: "settings" },
 ];
